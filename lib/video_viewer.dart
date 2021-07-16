@@ -3,36 +3,42 @@ library video_viewer;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'package:video_viewer/domain/entities/styles/video_viewer.dart';
-import 'package:video_viewer/domain/entities/video_source.dart';
-import 'package:video_viewer/domain/entities/language.dart';
-import 'package:video_viewer/ui/video_core/video_core.dart';
 import 'package:video_viewer/domain/bloc/controller.dart';
 import 'package:video_viewer/domain/bloc/metadata.dart';
+import 'package:video_viewer/domain/entities/language.dart';
+import 'package:video_viewer/domain/entities/styles/video_viewer.dart';
+import 'package:video_viewer/domain/entities/video_source.dart';
+import 'package:video_viewer/domain/entities/volume_control.dart';
+import 'package:video_viewer/ui/video_core/video_core.dart';
 
-export 'package:video_viewer/domain/entities/styles/video_viewer.dart';
-export 'package:video_viewer/domain/entities/settings_menu_item.dart';
-export 'package:video_viewer/domain/entities/video_source.dart';
-export 'package:video_viewer/domain/entities/subtitle.dart';
-export 'package:video_viewer/domain/entities/language.dart';
+export 'package:cached_video_player/cached_video_player.dart';
 export 'package:video_viewer/domain/bloc/controller.dart';
+export 'package:video_viewer/domain/entities/ads.dart';
+export 'package:video_viewer/domain/entities/language.dart';
+export 'package:video_viewer/domain/entities/settings_menu_item.dart';
+export 'package:video_viewer/domain/entities/styles/video_viewer.dart';
+export 'package:video_viewer/domain/entities/subtitle.dart';
+export 'package:video_viewer/domain/entities/video_source.dart';
+export 'package:video_viewer/domain/entities/volume_control.dart';
 
 class VideoViewer extends StatefulWidget {
-  VideoViewer({
+  const VideoViewer({
     Key? key,
     required this.source,
-    VideoViewerStyle? style,
-    VideoViewerController? controller,
+    this.style,
+    this.controller,
     this.looping = false,
     this.autoPlay = false,
+    this.defaultAspectRatio = 16 / 9,
     this.rewindAmount = -10,
     this.forwardAmount = 10,
-    this.defaultAspectRatio = 16 / 9,
-    this.onFullscreenFixLandscape = false,
+    this.onFullscreenFixLandscape = true,
     this.language = VideoViewerLanguage.en,
-  })  : this.controller = controller ?? VideoViewerController(),
-        this.style = style ?? VideoViewerStyle(),
-        super(key: key);
+    this.volumeManager = VideoViewerVolumeManager.video,
+    this.enableFullscreenScale = true,
+    this.enableVerticalSwapingGesture = true,
+    this.enableHorizontalSwapingGesture = true,
+  }) : super(key: key);
 
   /// Once the video is initialized, it will be played
   final bool autoPlay;
@@ -41,7 +47,7 @@ class VideoViewer extends StatefulWidget {
   final bool looping;
 
   /// It is an argument where you can change the design of almost the entire VideoViewer
-  final VideoViewerStyle style;
+  final VideoViewerStyle? style;
 
   /// It is the Aspect Ratio that the widget.style.loading will take when the video
   /// is not initialized yet
@@ -82,7 +88,29 @@ class VideoViewer extends StatefulWidget {
   /// ```
   final VideoViewerLanguage language;
 
-  final VideoViewerController controller;
+  /// Controls a platform video viewer, and provides updates when the state is
+  /// changing.
+  ///
+  /// Instances must be initialized with initialize.
+  ///...
+  /// The video is displayed in a Flutter app by creating a [VideoPlayer] widget.
+  ///
+  /// To reclaim the resources used by the player call [dispose].
+  ///
+  /// After [dispose] all further calls are ignored.
+  final VideoViewerController? controller;
+
+  ///On VerticalSwapingGesture the video is able to control the **video volume** or **device volume**.
+  final VideoViewerVolumeManager volumeManager;
+
+  ///When the video is fullscreen and landscape mode, It's able to scale itself until the screen boundaries
+  final bool enableFullscreenScale;
+
+  ///On VerticalSwapingGesture the video is able to control the **video volume** or **device volume**.
+  final bool enableVerticalSwapingGesture;
+
+  ///On HorizontalSwapingGesture the video is able to control the forward and rewind of itself
+  final bool enableHorizontalSwapingGesture;
 
   @override
   VideoViewerState createState() => VideoViewerState();
@@ -90,14 +118,13 @@ class VideoViewer extends StatefulWidget {
 
 class VideoViewerState extends State<VideoViewer> {
   late VideoViewerController _controller;
+  late VideoViewerStyle _style;
   bool _initialized = false;
 
   @override
   void initState() {
-    _controller = widget.controller;
-    _controller.source = widget.source;
-    _controller.looping = widget.looping;
-    _controller.source = widget.source;
+    _controller = widget.controller ?? VideoViewerController();
+    _style = widget.style ?? VideoViewerStyle();
     _initVideoViewer();
     super.initState();
   }
@@ -109,40 +136,45 @@ class VideoViewerState extends State<VideoViewer> {
   }
 
   void _initVideoViewer() async {
-    final activedSource = widget.source.keys.toList().first;
-    final source = widget.source.values.toList().first;
-
-    await _controller.changeSource(
-      source: source,
-      name: activedSource,
-      autoPlay: widget.autoPlay,
-    );
-
-    _controller.isShowingThumbnail = widget.style.thumbnail != null;
+    _controller.looping = widget.looping;
+    _controller.isShowingThumbnail = _style.thumbnail != null;
+    await _controller.initialize(widget.source, autoPlay: widget.autoPlay);
     setState(() => _initialized = true);
   }
 
   @override
   Widget build(BuildContext context) {
+    final Widget? thumbnail = _style.thumbnail;
     return _initialized
         ? MultiProvider(
             providers: [
               ChangeNotifierProvider.value(value: _controller),
               Provider.value(
                 value: VideoViewerMetadata(
-                  style: widget.style,
+                  style: _style,
                   language: widget.language,
                   rewindAmount: widget.rewindAmount,
                   forwardAmount: widget.forwardAmount,
+                  volumeManager: widget.volumeManager,
                   defaultAspectRatio: widget.defaultAspectRatio,
                   onFullscreenFixLandscape: widget.onFullscreenFixLandscape,
+                  enableFullscreenScale: widget.enableFullscreenScale,
+                  enableVerticalSwapingGesture:
+                      widget.enableVerticalSwapingGesture,
+                  enableHorizontalSwapingGesture:
+                      widget.enableHorizontalSwapingGesture,
                 ),
               ),
             ],
-            builder: (_, __) => VideoViewerCore(),
+            builder: (_, child) => child!,
+            child: const VideoViewerCore(),
           )
         : AspectRatio(
             aspectRatio: widget.defaultAspectRatio,
-            child: widget.style.loading);
+            child: Stack(children: [
+              if (thumbnail != null) Positioned.fill(child: thumbnail),
+              Center(child: _style.loading),
+            ]),
+          );
   }
 }

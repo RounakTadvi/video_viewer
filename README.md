@@ -1,3 +1,13 @@
+
+
+
+
+
+
+
+
+
+
 # video_viewer
 
 <br>
@@ -5,7 +15,6 @@
 ## My other APIs
 
 - [Scroll Navigation](https://pub.dev/packages/scroll_navigation)
-- [Video Editor](https://pub.dev/packages/video_editor)
 - [Helpers](https://pub.dev/packages/helpers)
 
 <br>
@@ -14,11 +23,22 @@
 
 - Amazing UI / UX.
 - Fancy animations.
+- Auto Cached Video
+- Custom Ads Support.
 - Fully customizable.
-- Multiplataform support.
 - HLS (m3u8) format support.
 - Captions (Subtitles) support.
+- Cut the video (It just will show a specific time of the video)
 - Easy and powerful implementation! :)
+
+<br><br>
+
+## **PREVIEW**
+View the full source code in the [example](https://pub.dev/packages/video_viewer/example)
+
+![video_viewer_preview](https://user-images.githubusercontent.com/65832922/125378278-4ed79f80-e343-11eb-992d-b7baeae0b06f.jpg)
+
+High-Quality Video Demo: https://user-images.githubusercontent.com/65832922/125377927-acb7b780-e342-11eb-950d-b80707e96341.mp4
 
 <br><br>
 
@@ -66,7 +86,7 @@ Add the following entry to your **Info.plist** file, located in `<project_root>/
 
 <br><br>
 
-## **ANDROID AND IOS**
+## **SCREENSHOTS**
 
 |                Playing                 |                Paused                 |
 | :------------------------------------: | :-----------------------------------: |
@@ -103,7 +123,7 @@ Add the following entry to your **Info.plist** file, located in `<project_root>/
 ![](./assets/readme/movil/volume_bar.jpg)
 
 <br><br>
-
+<!-- 
 <br><br>
 
 ## **WEB**
@@ -139,14 +159,14 @@ Add the following entry to your **Info.plist** file, located in `<project_root>/
 ### Volume Bar
 
 ![](./assets/readme/web/volume_bar.jpg)
-<br><br>
+<br><br> -->
 
 ---
 
 <br><br>
 
 ## **EXAMPLES**
-
+<!-- 
 ### **Serie Example** with 2 episodes
 
 ![](./assets/readme/SerieExample.gif)
@@ -340,7 +360,7 @@ class _SerieExampleState extends State<SerieExample> {
 }
 ```
 
-<br><br>
+<br><br> -->
 
 ### Using **VideoViewerController**
 
@@ -375,7 +395,7 @@ class _UsingVideoControllerExampleState extends State<UsingVideoControllerExampl
   }
 
   VideoPlayerController getVideoPlayer() => controller.controller;
-  String getActiveSourceName() => controller.activeSource;
+  String getactiveSourceNameName() => controller.activeSourceName;
   String getActiveCaption() => controller.activeCaption;
   bool isFullScreen() => controller.isFullScreen;
   bool isBuffering() => controller.isBuffering;

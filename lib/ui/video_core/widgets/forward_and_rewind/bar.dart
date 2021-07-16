@@ -13,14 +13,15 @@ class VideoCoreForwardAndRewindBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final query = VideoQuery();
-    final video = query.video(context).video!;
+    final VideoQuery query = VideoQuery();
+    final controller = query.video(context);
     final style = query.videoStyle(context);
     final forwardStyle = style.forwardAndRewindStyle;
 
-    final duration = video.value.duration;
-    final height = forwardStyle.bar.height;
-    final width = forwardStyle.bar.width;
+    final Duration duration = controller.duration;
+    final double height = forwardStyle.bar.height;
+    final double width = forwardStyle.bar.width;
+    final int relativePosition = position.inSeconds + seconds;
 
     return Center(
       child: Container(
@@ -31,7 +32,7 @@ class VideoCoreForwardAndRewindBar extends StatelessWidget {
         ),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           Text(
-            query.durationFormatter(Duration(seconds: seconds)),
+            query.durationFormatter(Duration(seconds: relativePosition)),
             style: style.textStyle,
           ),
           SizedBox(height: forwardStyle.spaceBeetweenBarAndText),
@@ -47,20 +48,20 @@ class VideoCoreForwardAndRewindBar extends StatelessWidget {
               ),
               Container(
                 height: height,
-                width: ((position.inSeconds + seconds) / duration.inSeconds) *
-                    width,
+                width: ((relativePosition / duration.inSeconds) * width)
+                    .clamp(0.0, width),
                 decoration: BoxDecoration(
                   color: forwardStyle.bar.color,
                   borderRadius: forwardStyle.borderRadius,
                 ),
               ),
               CustomPaint(
+                size: Size.infinite,
                 painter: _InitialPositionIdentifierPainter(
-                  color: forwardStyle.bar.identifier,
                   position: (position.inSeconds / duration.inSeconds) * width,
+                  color: forwardStyle.bar.identifier,
                   width: forwardStyle.bar.identifierWidth,
                 ),
-                size: Size.infinite,
               ),
             ]),
           ),

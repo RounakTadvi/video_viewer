@@ -18,24 +18,27 @@ class MainMenu extends StatelessWidget {
     final style = metadata.style.settingsStyle;
     final items = style.items;
 
+    final source = controller.source!;
+
     return Center(
       child: Wrap(
         crossAxisAlignment: WrapCrossAlignment.center,
         runAlignment: WrapAlignment.center,
         children: [
-          _MainMenuItem(
-            index: 0,
-            icon: style.settings,
-            title: metadata.language.quality,
-            subtitle: controller.activeSource!,
-          ),
+          if (source.length > 1)
+            _MainMenuItem(
+              index: 0,
+              icon: style.settings,
+              title: metadata.language.quality,
+              subtitle: controller.activeSourceName!,
+            ),
           _MainMenuItem(
             index: 1,
             icon: style.speed,
             title: metadata.language.speed,
             subtitle: speed == 1.0 ? metadata.language.normalSpeed : "x$speed",
           ),
-          if (controller.source![controller.activeSource!]!.subtitle != null)
+          if (source[controller.activeSourceName!]!.subtitle != null)
             _MainMenuItem(
               index: 2,
               icon: style.caption,

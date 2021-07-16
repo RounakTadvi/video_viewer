@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:video_player/video_player.dart';
+import 'package:cached_video_player/cached_video_player.dart';
 import 'package:video_viewer/data/repositories/video.dart';
 
 class VideoCorePlayer extends StatefulWidget {
-  VideoCorePlayer({Key? key}) : super(key: key);
+  const VideoCorePlayer({Key? key}) : super(key: key);
 
   @override
   _VideoCorePlayerState createState() => _VideoCorePlayerState();

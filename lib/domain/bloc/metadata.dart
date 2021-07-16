@@ -1,14 +1,19 @@
 import 'package:video_viewer/domain/entities/language.dart';
 import 'package:video_viewer/domain/entities/styles/video_viewer.dart';
+import 'package:video_viewer/domain/entities/volume_control.dart';
 
 class VideoViewerMetadata {
-  VideoViewerMetadata({
-    required this.style,
+  const VideoViewerMetadata({
+    required this.defaultAspectRatio,
     required this.rewindAmount,
     required this.forwardAmount,
-    required this.defaultAspectRatio,
     required this.onFullscreenFixLandscape,
     required this.language,
+    required this.style,
+    required this.volumeManager,
+    required this.enableFullscreenScale,
+    required this.enableVerticalSwapingGesture,
+    required this.enableHorizontalSwapingGesture,
   });
 
   /// It is the Aspect Ratio that the widget.style.loading will take when the video
@@ -41,4 +46,12 @@ class VideoViewerMetadata {
 
   /// It is an argument where you can change the design of almost the entire VideoViewer
   final VideoViewerStyle style;
+
+  final VideoViewerVolumeManager volumeManager;
+
+  final bool enableFullscreenScale;
+
+  final bool enableVerticalSwapingGesture;
+
+  final bool enableHorizontalSwapingGesture;
 }

@@ -6,7 +6,7 @@ import 'package:video_viewer/data/repositories/video.dart';
 import 'package:video_viewer/ui/video_core/video_core.dart';
 
 class FullScreenPage extends StatefulWidget {
-  FullScreenPage({Key? key}) : super(key: key);
+  const FullScreenPage({Key? key}) : super(key: key);
 
   @override
   _FullScreenPageState createState() => _FullScreenPageState();
@@ -51,7 +51,7 @@ class _FullScreenPageState extends State<FullScreenPage> {
       backgroundColor: Colors.black,
       body: WillPopScope(
         onWillPop: () async {
-          await _query.video(context).closeFullScreen(context);
+          await _query.video(context).openOrCloseFullscreen(context);
           return false;
         },
         child: Center(

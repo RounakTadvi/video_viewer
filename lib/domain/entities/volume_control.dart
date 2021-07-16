@@ -1,0 +1,1 @@
+enum VideoViewerVolumeManager { device, video }
