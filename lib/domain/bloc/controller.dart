@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'package:cached_video_player/cached_video_player.dart';
+import 'package:video_player/video_player.dart';
 import 'package:helpers/helpers.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -51,7 +51,8 @@ class VideoViewerController extends ChangeNotifier {
       _isShowingThumbnail = true,
       _isShowingSettingsMenu = false,
       _isShowingMainSettingsMenu = false,
-      _isDraggingProgressBar = false;
+      _isDraggingProgressBar = false,
+      _isShowingChat = false;
 
   Duration _maxBuffering = Duration.zero;
 
@@ -118,6 +119,13 @@ class VideoViewerController extends ChangeNotifier {
   bool get isFullScreen => _isFullScreen;
 
   bool get isPlaying => _video!.value.isPlaying;
+
+  bool get isShowingChat => _isShowingChat;
+
+  set isShowingChat(bool isShowingChat) {
+    _isShowingChat = isShowingChat;
+    notifyListeners();
+  }
 
   bool get isBuffering => _isBuffering;
 
@@ -193,7 +201,7 @@ class VideoViewerController extends ChangeNotifier {
 
   ///The [source.video] must be initialized previously
   ///
-  ///[inheritValues] has the function to inherit last controller values.
+  ///[inheritPosition] has the function to inherit last controller values.
   ///It's useful on changed quality video.
   ///
   ///For example:
@@ -203,10 +211,12 @@ class VideoViewerController extends ChangeNotifier {
   Future<void> changeSource({
     required VideoSource source,
     required String name,
-    bool inheritValues = true,
+    bool inheritPosition = true,
     bool autoPlay = true,
   }) async {
     final double speed = _video?.value.playbackSpeed ?? 1.0;
+    final double volume = _video?.value.volume ?? 1.0;
+    final Duration lastPositon = _video != null ? position : Duration.zero;
 
     //Change the subtitles
     if (source.subtitle != null) {
@@ -240,9 +250,14 @@ class VideoViewerController extends ChangeNotifier {
     //Update it inheritValues
     await _video?.setPlaybackSpeed(speed);
     await _video?.setLooping(looping);
-    if (inheritValues || source.range != null) {
-      await seekTo(source.range != null ? beginRange : position);
+    await _video?.setVolume(volume);
+
+    if (inheritPosition) {
+      await seekTo(lastPositon);
+    } else if (source.range != null) {
+      await seekTo(beginRange);
     }
+
     if (autoPlay) await play();
     notifyListeners();
   }
@@ -488,9 +503,13 @@ class VideoViewerController extends ChangeNotifier {
   //OVERLAY//
   //-------//
   void showAndHideOverlay([bool? show]) {
-    _isShowingOverlay = show ?? !_isShowingOverlay;
-    if (_isShowingOverlay) cancelCloseOverlay();
-    notifyListeners();
+    if (!isShowingChat) {
+      _isShowingOverlay = show ?? !_isShowingOverlay;
+      if (_isShowingOverlay) cancelCloseOverlay();
+      notifyListeners();
+    } else {
+      isShowingChat = false;
+    }
   }
 
   //-------------//
@@ -548,17 +567,22 @@ class VideoViewerController extends ChangeNotifier {
   Future<void> _openFullScreen(BuildContext context) async {
     final VideoQuery query = VideoQuery();
     final metadata = query.videoMetadata(context);
-    await Misc.setSystemOverlay([]);
-    context.toTransparentPage(
-      MultiProvider(
+    final Duration transition = metadata.style.transitions;
+    Navigator.of(context).push(PageRouteBuilder(
+      opaque: false,
+      fullscreenDialog: true,
+      transitionDuration: transition,
+      reverseTransitionDuration: transition,
+      pageBuilder: (_, __, ___) => MultiProvider(
         providers: [
           ChangeNotifierProvider.value(value: query.video(context)),
           Provider.value(value: metadata),
         ],
-        child: const FullScreenPage(),
+        child: FullScreenPage(
+          fixedLandscape: metadata.onFullscreenFixLandscape,
+        ),
       ),
-      duration: metadata.style.transitions,
-    );
+    ));
   }
 
   ///When you want to close FullScreen Page, you need pass the FullScreen's context,
@@ -566,6 +590,6 @@ class VideoViewerController extends ChangeNotifier {
   Future<void> _closeFullScreen(BuildContext context) async {
     await Misc.setSystemOverlay(SystemOverlay.values);
     await Misc.setSystemOrientation(SystemOrientation.values);
-    context.goBack();
+    context.navigator.pop();
   }
 }

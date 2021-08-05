@@ -3,7 +3,7 @@ import 'package:video_viewer/domain/entities/styles/video_viewer.dart';
 import 'package:video_viewer/domain/entities/volume_control.dart';
 
 class VideoViewerMetadata {
-  const VideoViewerMetadata({
+  VideoViewerMetadata({
     required this.defaultAspectRatio,
     required this.rewindAmount,
     required this.forwardAmount,
@@ -14,6 +14,8 @@ class VideoViewerMetadata {
     required this.enableFullscreenScale,
     required this.enableVerticalSwapingGesture,
     required this.enableHorizontalSwapingGesture,
+    required this.enableShowReplayIconAtVideoEnd,
+    required this.enableChat,
   });
 
   /// It is the Aspect Ratio that the widget.style.loading will take when the video
@@ -54,4 +56,8 @@ class VideoViewerMetadata {
   final bool enableVerticalSwapingGesture;
 
   final bool enableHorizontalSwapingGesture;
+
+  final bool enableShowReplayIconAtVideoEnd;
+
+  final bool enableChat;
 }

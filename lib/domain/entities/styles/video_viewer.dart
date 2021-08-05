@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:video_viewer/domain/entities/styles/chat.dart';
 import 'package:video_viewer/domain/entities/styles/forward_and_rewind.dart';
 import 'package:video_viewer/domain/entities/styles/play_and_pause.dart';
 import 'package:video_viewer/domain/entities/styles/progress_bar.dart';
@@ -8,6 +9,7 @@ import 'package:video_viewer/domain/entities/styles/subtitle.dart';
 import 'package:video_viewer/domain/entities/styles/volume_bar.dart';
 
 export 'package:video_viewer/domain/entities/styles/bar.dart';
+export 'package:video_viewer/domain/entities/styles/chat.dart';
 export 'package:video_viewer/domain/entities/styles/forward_and_rewind.dart';
 export 'package:video_viewer/domain/entities/styles/play_and_pause.dart';
 export 'package:video_viewer/domain/entities/styles/progress_bar.dart';
@@ -25,6 +27,7 @@ class VideoViewerStyle {
     ForwardAndRewindStyle? forwardAndRewindStyle,
     VolumeBarStyle? volumeBarStyle,
     SubtitleStyle? subtitleStyle,
+    VideoViewerChatStyle? chatStyle,
     Widget? loading,
     Widget? buffering,
     TextStyle? textStyle,
@@ -33,28 +36,29 @@ class VideoViewerStyle {
     this.transitions = const Duration(milliseconds: 400),
     this.skipAdBuilder,
     this.skipAdAlignment = Alignment.bottomRight,
-  })  : this.loading = loading ??
+  })  : loading = loading ??
             Center(
               child: CircularProgressIndicator(
                 strokeWidth: 1.6,
                 valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
               ),
             ),
-        this.buffering = buffering ??
+        buffering = buffering ??
             Center(
               child: CircularProgressIndicator(
                 strokeWidth: 1.6,
                 valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
               ),
             ),
-        this.subtitleStyle = subtitleStyle ?? SubtitleStyle(),
-        this.settingsStyle = settingsStyle ?? SettingsMenuStyle(),
-        this.progressBarStyle = progressBarStyle ?? ProgressBarStyle(),
-        this.volumeBarStyle = volumeBarStyle ?? VolumeBarStyle(),
-        this.forwardAndRewindStyle =
+        chatStyle = chatStyle ?? const VideoViewerChatStyle(),
+        subtitleStyle = subtitleStyle ?? SubtitleStyle(),
+        settingsStyle = settingsStyle ?? SettingsMenuStyle(),
+        progressBarStyle = progressBarStyle ?? ProgressBarStyle(),
+        volumeBarStyle = volumeBarStyle ?? VolumeBarStyle(),
+        forwardAndRewindStyle =
             forwardAndRewindStyle ?? ForwardAndRewindStyle(),
-        this.playAndPauseStyle = playAndPauseStyle ?? PlayAndPauseWidgetStyle(),
-        this.textStyle = textStyle ??
+        playAndPauseStyle = playAndPauseStyle ?? PlayAndPauseWidgetStyle(),
+        textStyle = textStyle ??
             TextStyle(
                 color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold);
 
@@ -122,6 +126,8 @@ class VideoViewerStyle {
 
   final Alignment skipAdAlignment;
 
+  final VideoViewerChatStyle chatStyle;
+
   VideoViewerStyle copyWith({
     SettingsMenuStyle? settingsStyle,
     VolumeBarStyle? volumeBarStyle,
@@ -137,6 +143,7 @@ class VideoViewerStyle {
     TextStyle? textStyle,
     Widget Function(Duration)? skipAdBuilder,
     Alignment? skipAdAlignment,
+    VideoViewerChatStyle? chatStyle,
   }) {
     return VideoViewerStyle(
       settingsStyle: settingsStyle ?? this.settingsStyle,
@@ -154,6 +161,7 @@ class VideoViewerStyle {
       textStyle: textStyle ?? this.textStyle,
       skipAdBuilder: skipAdBuilder ?? this.skipAdBuilder,
       skipAdAlignment: skipAdAlignment ?? this.skipAdAlignment,
+      chatStyle: chatStyle ?? this.chatStyle,
     );
   }
 
@@ -175,7 +183,8 @@ class VideoViewerStyle {
         other.transitions == transitions &&
         other.textStyle == textStyle &&
         other.skipAdBuilder == skipAdBuilder &&
-        other.skipAdAlignment == skipAdAlignment;
+        other.skipAdAlignment == skipAdAlignment &&
+        other.chatStyle == chatStyle;
   }
 
   @override
@@ -193,6 +202,7 @@ class VideoViewerStyle {
         transitions.hashCode ^
         textStyle.hashCode ^
         skipAdBuilder.hashCode ^
-        skipAdAlignment.hashCode;
+        skipAdAlignment.hashCode ^
+        chatStyle.hashCode;
   }
 }

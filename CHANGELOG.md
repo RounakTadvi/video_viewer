@@ -1,3 +1,11 @@
+## [1.2.5]
+
+- Chat support added
+
+## [1.2.4]
+
+- Fixed some bugs
+
 ## [1.2.3+1]
 
 - README.md preview fixed

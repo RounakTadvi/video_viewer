@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -380,7 +381,7 @@ class _SerieVideoViewerState extends State<SerieVideoViewer> {
       controller.closeSettingsMenu();
 
       await controller.changeSource(
-        inheritValues: false, //RESET SPEED TO NORMAL AND POSITION TO ZERO
+        inheritPosition: false, //RESET SPEED TO NORMAL AND POSITION TO ZERO
         source: video.value,
         name: video.key,
       );
@@ -397,9 +398,11 @@ class _SerieVideoViewerState extends State<SerieVideoViewer> {
   Widget build(BuildContext context) {
     return VideoViewer(
       controller: controller,
+      enableChat: true,
       source: VideoSource.fromNetworkVideoSources(initial.value.source),
       style: CustomVideoViewerStyle(movie: widget.serie, context: context)
           .copyWith(
+        chatStyle: const VideoViewerChatStyle(chat: SerieChat()),
         settingsStyle: SettingsMenuStyle(
           paddingBetween: 10,
           items: [
@@ -435,6 +438,55 @@ class _SerieVideoViewerState extends State<SerieVideoViewer> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class SerieChat extends StatefulWidget {
+  const SerieChat({Key? key}) : super(key: key);
+
+  @override
+  _SerieChatState createState() => _SerieChatState();
+}
+
+class _SerieChatState extends State<SerieChat> {
+  final ScrollController _controller = ScrollController();
+  final List<String> _texts = [];
+  late Timer timer;
+
+  @override
+  void initState() {
+    timer = Misc.periodic(500, () {
+      if (mounted) {
+        _texts.add("HELLO");
+        _controller.jumpTo(_controller.position.maxScrollExtent);
+        setState(() {});
+      }
+    });
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    timer.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 160,
+      color: Colors.black.withOpacity(0.8),
+      child: ListView.builder(
+        controller: _controller,
+        itemCount: _texts.length,
+        itemBuilder: (_, int index) {
+          return Text(
+            "x$index ${_texts[index]}",
+            style: context.textTheme.subtitle1,
+          );
+        },
       ),
     );
   }
@@ -507,7 +559,9 @@ class MovieCard extends StatelessWidget {
           child: Stack(children: [
             Positioned.fill(child: MovieImage(movie)),
             SplashTap(
-              onTap: () => context.to(MoviePage(movie)),
+              onTap: () => context.navigator.push(
+                MaterialPageRoute(builder: (_) => MoviePage(movie)),
+              ),
               child: Container(color: Colors.transparent),
             ),
             Padding(padding: kAllPadding, child: MovieTitle(movie)),
