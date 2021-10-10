@@ -5,11 +5,11 @@ import 'package:video_viewer/data/repositories/video.dart';
 class SecondaryMenu extends StatelessWidget {
   const SecondaryMenu({
     Key? key,
-    this.children,
+    required this.children,
     this.width = 150,
   }) : super(key: key);
 
-  final List<Widget>? children;
+  final List<Widget> children;
   final double width;
 
   @override
@@ -22,25 +22,29 @@ class SecondaryMenu extends StatelessWidget {
       child: Container(
         width: width,
         color: Colors.transparent,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            CustomInkWell(
-              onTap: query.video(context).closeAllSecondarySettingsMenus,
-              child: Row(children: [
-                style.chevron,
-                Expanded(
-                  child: Text(
-                    metadata.language.settings,
-                    style: metadata.style.textStyle,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              CustomInkWell(
+                onTap: query.video(context).closeAllSecondarySettingsMenus,
+                child: Row(children: [
+                  style.chevron,
+                  Expanded(
+                    child: Text(
+                      metadata.language.settings,
+                      style: metadata.style.textStyle,
+                    ),
                   ),
-                ),
-              ]),
-            ),
-            ...children!,
-          ],
+                ]),
+              ),
+              for (int i = 0; i < children.length; i++) ...[
+                children[i],
+              ]
+            ],
+          ),
         ),
       ),
     );

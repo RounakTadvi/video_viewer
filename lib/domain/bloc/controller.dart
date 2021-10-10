@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer';
 import 'package:video_player/video_player.dart';
 import 'package:helpers/helpers.dart';
 import 'package:flutter/material.dart';
@@ -13,7 +14,7 @@ import 'package:video_viewer/domain/entities/video_source.dart';
 
 const int _kMillisecondsToHideTheOverlay = 2800;
 
-class VideoViewerController extends ChangeNotifier {
+class VideoViewerController extends ChangeNotifier with WidgetsBindingObserver {
   /// Controls a platform video viewer, and provides updates when the state is
   /// changing.
   ///
@@ -52,8 +53,11 @@ class VideoViewerController extends ChangeNotifier {
       _isShowingSettingsMenu = false,
       _isShowingMainSettingsMenu = false,
       _isDraggingProgressBar = false,
-      _isShowingChat = false;
+      _isShowingChat = false,
+      _videoWasPlaying = false,
+      _isChangingSource = false;
 
+  BuildContext? context;
   Duration _maxBuffering = Duration.zero;
 
   /// Receive a list of all the resources to be played.
@@ -122,6 +126,8 @@ class VideoViewerController extends ChangeNotifier {
 
   bool get isShowingChat => _isShowingChat;
 
+  bool get isChangingSource => _isChangingSource;
+
   set isShowingChat(bool isShowingChat) {
     _isShowingChat = isShowingChat;
     notifyListeners();
@@ -174,6 +180,7 @@ class VideoViewerController extends ChangeNotifier {
     Map<String, VideoSource> sources, {
     bool autoPlay = true,
   }) async {
+    WidgetsBinding.instance?.addObserver(this);
     final MapEntry<String, VideoSource> entry = sources.entries.first;
     _mounted = true;
     _source = sources;
@@ -182,12 +189,13 @@ class VideoViewerController extends ChangeNotifier {
       source: entry.value,
       autoPlay: autoPlay,
     );
-    printAmber("VIDEO VIEWER INITIALIZED");
+    log("VIDEO VIEWER INITIALIZED");
     Wakelock.enable();
   }
 
   @override
   Future<void> dispose() async {
+    WidgetsBinding.instance?.removeObserver(this);
     _mounted = false;
     _closeOverlayButtons?.cancel();
     _deleteAdTimer();
@@ -195,8 +203,20 @@ class VideoViewerController extends ChangeNotifier {
     _video?.pause();
     _video?.dispose();
     Wakelock.disable();
-    printAmber("VIDEO VIEWER DISPOSED");
+    log("VIDEO VIEWER DISPOSED");
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused) {
+      log("APP PAUSED");
+      _videoWasPlaying = isPlaying;
+      if (_videoWasPlaying) pause();
+    } else if (state == AppLifecycleState.resumed) {
+      log("APP RESUMED");
+      if (_videoWasPlaying) play();
+    }
   }
 
   ///The [source.video] must be initialized previously
@@ -240,12 +260,23 @@ class VideoViewerController extends ChangeNotifier {
     }
 
     //Initialize the video
+    final oldVideo = _video;
+    if (oldVideo != null) {
+      _isChangingSource = true;
+      notifyListeners();
+    }
     await source.video.initialize();
-    _video?.removeListener(_videoListener);
+    if (oldVideo != null) {
+      oldVideo.removeListener(_videoListener);
+      await oldVideo.pause();
+      await oldVideo.dispose();
+    }
     _video = source.video;
-    _video?.addListener(_videoListener);
+    source.video.addListener(_videoListener);
     _activeSourceName = name;
     _duration = endRange - beginRange;
+    _isChangingSource = false;
+    notifyListeners();
 
     //Update it inheritValues
     await _video?.setPlaybackSpeed(speed);
@@ -287,12 +318,16 @@ class VideoViewerController extends ChangeNotifier {
   }
 
   Future<void> play() async {
-    if (looping) _seekToBegin();
-    if (_activeAd == null) await _video?.play();
+    if (!_isChangingSource) {
+      if (looping) _seekToBegin();
+      if (_activeAd == null) await _video?.play();
+    }
   }
 
   Future<void> pause() async {
-    await _video?.pause();
+    if (!_isChangingSource) {
+      await _video?.pause();
+    }
   }
 
   Future<void> _seekToBegin() async {
@@ -300,14 +335,16 @@ class VideoViewerController extends ChangeNotifier {
   }
 
   Future<void> seekTo(Duration position) async {
-    final Duration end = endRange;
-    final Duration begin = beginRange;
-    if (position < begin) {
-      position = begin;
-    } else if (position > end) {
-      position = end;
+    if (!_isChangingSource) {
+      final Duration end = endRange;
+      final Duration begin = beginRange;
+      if (position < begin) {
+        position = begin;
+      } else if (position > end) {
+        position = end;
+      }
+      await _video?.seekTo(position);
     }
-    await _video?.seekTo(position);
   }
 
   void _videoListener() {
@@ -547,15 +584,13 @@ class VideoViewerController extends ChangeNotifier {
   //----------//
   //FULLSCREEN//
   //----------//
-  Future<void> openOrCloseFullscreen(BuildContext context) async {
+  Future<void> openOrCloseFullscreen() async {
     if (!_isGoingToOpenOrCloseFullscreen) {
       _isGoingToOpenOrCloseFullscreen = true;
       if (!_isFullScreen) {
-        _isFullScreen = true;
-        await _openFullScreen(context);
+        await openFullScreen();
       } else {
-        _isFullScreen = false;
-        await _closeFullScreen(context);
+        await closeFullScreen();
       }
       _isGoingToOpenOrCloseFullscreen = false;
     }
@@ -564,32 +599,38 @@ class VideoViewerController extends ChangeNotifier {
 
   ///When you want to open FullScreen Page, you need pass the FullScreen's context,
   ///because this function do **Navigator.push(context, TransparentRoute(...))**
-  Future<void> _openFullScreen(BuildContext context) async {
-    final VideoQuery query = VideoQuery();
-    final metadata = query.videoMetadata(context);
-    final Duration transition = metadata.style.transitions;
-    Navigator.of(context).push(PageRouteBuilder(
-      opaque: false,
-      fullscreenDialog: true,
-      transitionDuration: transition,
-      reverseTransitionDuration: transition,
-      pageBuilder: (_, __, ___) => MultiProvider(
-        providers: [
-          ChangeNotifierProvider.value(value: query.video(context)),
-          Provider.value(value: metadata),
-        ],
-        child: FullScreenPage(
-          fixedLandscape: metadata.onFullscreenFixLandscape,
+  Future<void> openFullScreen() async {
+    if (context != null && !_isFullScreen) {
+      _isFullScreen = true;
+      final VideoQuery query = VideoQuery();
+      final metadata = query.videoMetadata(context!);
+      final Duration transition = metadata.style.transitions;
+      context?.navigator.push(PageRouteBuilder(
+        opaque: false,
+        fullscreenDialog: true,
+        transitionDuration: transition,
+        reverseTransitionDuration: transition,
+        pageBuilder: (_, __, ___) => MultiProvider(
+          providers: [
+            ChangeNotifierProvider.value(value: query.video(context!)),
+            Provider.value(value: metadata),
+          ],
+          child: FullScreenPage(
+            fixedLandscape: metadata.onFullscreenFixLandscape,
+          ),
         ),
-      ),
-    ));
+      ));
+    }
   }
 
   ///When you want to close FullScreen Page, you need pass the FullScreen's context,
   ///because this function do **Navigator.pop(context);**
-  Future<void> _closeFullScreen(BuildContext context) async {
-    await Misc.setSystemOverlay(SystemOverlay.values);
-    await Misc.setSystemOrientation(SystemOrientation.values);
-    context.navigator.pop();
+  Future<void> closeFullScreen() async {
+    if (_isFullScreen) {
+      _isFullScreen = false;
+      await Misc.setSystemOverlay(SystemOverlay.values);
+      await Misc.setSystemOrientation(SystemOrientation.values);
+      context?.navigator.pop();
+    }
   }
 }
